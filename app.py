@@ -49,7 +49,7 @@ def convert_to_wav(audio_bytes, filename):
 
         return output_path.read_bytes()
 
-MODEL_NAME = "superb/wav2vec2-base-superb-er"
+MODEL_NAME = "Dpngtm/wav2vec2-emotion-recognition"
 
 st.set_page_config(page_title="VoiceTrace | Audio Triage", page_icon="???", layout="wide")
 
@@ -120,21 +120,34 @@ def analyze_audio(audio_bytes, segment_seconds):
             for item in result
         }
 
+        
+        # Normalize labels so the score columns work with this model.
+        scores = {
+            str(item["label"]).strip().lower(): float(item["score"])
+            for item in result
+        }
+
+        best_label = str(best["label"]).strip().lower()
+
         rows.append({
             "Start (s)": round(start / sr, 2),
             "End (s)": round(min(start + segment_samples, len(mono)) / sr, 2),
-            "Predicted emotion": best["label"],
+            "Predicted emotion": best_label.title(),
             "Top score": round(float(best["score"]), 4),
-            "Neutral score": scores.get("neu", 0.0),
-            "Happy score": scores.get("hap", 0.0),
-            "Angry score": scores.get("ang", 0.0),
-            "Sad score": scores.get("sad", 0.0),
+            "Neutral score": round(scores.get("neutral", scores.get("neu", 0.0)), 4),
+            "Happy score": round(scores.get("happy", scores.get("hap", 0.0)), 4),
+            "Angry score": round(scores.get("angry", scores.get("ang", 0.0)), 4),
+            "Sad score": round(scores.get("sad", 0.0), 4),
+            "Fear score": round(scores.get("fear", 0.0), 4),
+            "Disgust score": round(scores.get("disgust", 0.0), 4),
+            "Surprise score": round(scores.get("surprise", 0.0), 4),
             "Review flag": (
                 "Review recommended"
                 if best["score"] < 0.60
                 else "Human review required"
             )
         })
+
 
     return duration, sr, rows
 
